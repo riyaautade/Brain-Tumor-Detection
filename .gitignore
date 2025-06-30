@@ -1,0 +1,12 @@
+# Ignore large dataset folders
+/augmented_data/
+/brain_tumor_dataset/
+/no/
+/yes/
+/archive/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.ipynb_checkpoints/
+.DS_Store
