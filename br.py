@@ -299,5 +299,121 @@ crop_brain_tumor(img, True)
 
 #-----------------------------------------------------------------------------------------------------
 
+#Image Loading & Visualisation
 
+# Shuffle: randomly shuffles your dataset — keeping the input X and labels y aligned.
+# Why? When you load your images (like from folders named “yes” and “no”), they’re likely grouped — all the “yes” images, then all the “no” ones.
+# If you don’t shuffle, your model might only see tumor images first and learn a biased pattern. It could also fail on validation data if the distribution is different.
+
+# Interpolation: When you resize an image, especially increase or decrease its dimensions, you end up with missing pixels (when enlarging) or extra pixels (when shrinking).
+# Interpolation is the method used to estimate the values of those new pixels.
+
+from sklearn.utils import shuffle
+
+def load_data(dir_list, image_size):
+    X=[]  # stores image data
+    y=[]  ## stores corresponding labels (yes/no tumor)
+    
+    image_width, image_height=image_size  #a tuple
+    
+    for directory in dir_list:                     #For every image inside both folders
+        for filename in os.listdir(directory):
+            
+            image = cv2.imread(directory + '/' + filename)  #read image using open cv
+            image = crop_brain_tumor(image, plot=False)     #crop brain image, dont plot it 
+            
+            image = cv2.resize(image, dsize=(image_width, image_height), interpolation = cv2.INTER_CUBIC)  #Resizes image to 240x240 using cubic interpolation (good quality)
+            image = image/255.00   #Divides pixel values by 255 to Normalize to [0, 1]
+            
+            X.append(image)   #Adds the image to list X
+            if directory[-3:] == "yes":   #Adds label to list y: 1 if image came from folder ending in "yes"; 0 if from "no"
+                y.append(1)
+            else:
+                y.append(0)
+                
+    X=np.array(X)  #Converts lists to NumPy arrays (needed for ML models)
+    y=np.array(y)
+    X,y = shuffle(X,y)  #Shuffles the dataset to randomize tumor/no-tumor order
+    
+    print(f"Number of examples: {len(X)}")
+    print(f"X SHAPE is : {X.shape}")   #X shape: (No.of images(2065), size of each image(240,240), each image has 3 channels(RGB))->(2065,240,240,3)
+    print(f"y SHAPE is : {y.shape}")   #y shape: (No. of labels to images, )->(2065, )
+    return X,y
+
+# Load Data From Directories
+augmented_path = 'augmented_data/'
+augmeneted_yes = augmented_path + 'yes'
+augmeneted_no = augmented_path + 'no'
+
+IMAGE_WIDTH, IMAGE_HEIGHT = (240,240)
+
+X,y = load_data([augmeneted_yes, augmeneted_no], (IMAGE_WIDTH, IMAGE_HEIGHT)) #Calls the function and stores preprocessed images in X, and labels in y.
+
+# Visualize Sample Images: Function to show n sample images per class (tumor = 1, no tumor = 0)
+def plot_sample_images(X, y, n=50):
+
+    for label in [0,1]:
+        images = X[np.argwhere(y == label)]  #This returns the array indices where y equals the label & then stores the images at those indices
+        
+        # Plot the images: Takes only n images from that class & arranges them in a 10-column grid
+        n_images = images[:n]
+        columns_n = 10
+        rows_n = int(n/ columns_n)
+        plt.figure(figsize=(20, 10))
+        
+        i = 1        
+        for image in n_images:
+            plt.subplot(rows_n, columns_n, i)  #Add subplots (adds each image in the the image grid)
+            plt.imshow(image[0])  #[0] to removes the extra array wrapper/ dimension caused by argwhere
+            
+            plt.tick_params(axis='both', which='both', 
+                            top=False, bottom=False, left=False, right=False,
+                            labelbottom=False, labeltop=False, labelleft=False,
+                            labelright=False)   #hides axis ticks
+            i += 1
+        
+        label_to_str = lambda label: "Yes" if label == 1 else "No" 
+        plt.suptitle(f"Brain Tumor: {label_to_str(label)}")  #Adds title based on tumor status
+        plt.show()
+
+plot_sample_images(X,y)
+
+#-----------------------------------------------------------------------------------------------------
+
+# Data Spliting: Creating Train, Test, Validation datasets
+
+#Creating folders, can be done manually too:
+if not os.path.isdir('tumorous_and_nontumorous'):
+    base_dir = 'tumorous_and_nontumorous'
+    os.mkdir(base_dir)
+    
+if not os.path.isdir('tumorous_and_nontumorous/train'):
+    train_dir = os.path.join(base_dir , 'train')
+    os.mkdir(train_dir)
+if not os.path.isdir('tumorous_and_nontumorous/test'):
+    test_dir = os.path.join(base_dir , 'test')
+    os.mkdir(test_dir)
+if not os.path.isdir('tumorous_and_nontumorous/valid'):
+    valid_dir = os.path.join(base_dir , 'valid')
+    os.mkdir(valid_dir)
+    
+if not os.path.isdir('tumorous_and_nontumorous/train/tumorous'):
+    infected_train_dir = os.path.join(train_dir, 'tumorous')
+    os.mkdir(infected_train_dir)
+if not os.path.isdir('tumorous_and_nontumorous/test/tumorous'):
+    infected_test_dir = os.path.join(test_dir, 'tumorous')
+    os.mkdir(infected_test_dir)
+if not os.path.isdir('tumorous_and_nontumorous/valid/tumorous'):
+    infected_valid_dir = os.path.join(valid_dir, 'tumorous')
+    os.mkdir(infected_valid_dir)
+
+if not os.path.isdir('tumorous_and_nontumorous/train/nontumorous'):
+    healthy_train_dir = os.path.join(train_dir, 'nontumorous')
+    os.mkdir(healthy_train_dir)
+if not os.path.isdir('tumorous_and_nontumorous/test/nontumorous'):
+    healthy_test_dir = os.path.join(test_dir, 'nontumorous')
+    os.mkdir(healthy_test_dir)
+if not os.path.isdir('tumorous_and_nontumorous/valid/nontumorous'):
+    healthy_valid_dir = os.path.join(valid_dir, 'nontumorous')
+    os.mkdir(healthy_valid_dir) 
 #-----------------------------------------------------------------------------------------------------
